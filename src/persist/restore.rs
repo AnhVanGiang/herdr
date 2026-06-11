@@ -598,6 +598,7 @@ fn restore_tab(
         Some((
             crate::workspace::Tab {
                 custom_name: snap.custom_name.clone(),
+                auto_name: snap.auto_name.clone(),
                 number,
                 root_pane,
                 layout,
@@ -1059,6 +1060,7 @@ mod tests {
                 worktree_space: None,
                 tabs: vec![TabSnapshot {
                     custom_name: None,
+                    auto_name: None,
                     layout: LayoutSnapshot::Pane(0),
                     panes: HashMap::from([(
                         0,
@@ -1134,6 +1136,7 @@ mod tests {
                 worktree_space: None,
                 tabs: vec![TabSnapshot {
                     custom_name: None,
+                    auto_name: None,
                     layout: LayoutSnapshot::Pane(0),
                     panes: HashMap::from([(
                         0,
@@ -1335,6 +1338,7 @@ mod tests {
                 worktree_space: None,
                 tabs: vec![TabSnapshot {
                     custom_name: None,
+                    auto_name: None,
                     layout: LayoutSnapshot::Pane(0),
                     panes,
                     zoomed: false,

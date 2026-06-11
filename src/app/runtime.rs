@@ -453,15 +453,13 @@ impl App {
         }
         for ws in &mut self.state.workspaces {
             for tab in &mut ws.tabs {
-                if !tab.is_auto_named() {
-                    continue;
-                }
                 let root_pane = tab.root_pane;
                 if let Some(cwd) =
                     tab.cwd_for_pane(root_pane, &self.state.terminals, &self.terminal_runtimes)
                 {
-                    if let Some(branch) = crate::workspace::git_branch(&cwd) {
-                        tab.set_custom_name(branch);
+                    let new_auto_name = crate::workspace::git_branch(&cwd);
+                    if tab.auto_name != new_auto_name {
+                        tab.auto_name = new_auto_name;
                     }
                 }
             }

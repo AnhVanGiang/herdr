@@ -454,14 +454,15 @@ pub(super) fn apply_rename_action(state: &mut AppState, action: ModalAction) {
                             let workspace_id = ws.id.clone();
                             let active_tab = ws.active_tab;
                             if let Some(tab) = ws.active_tab_mut() {
-                                let keep_auto_name =
-                                    tab.is_auto_named() && new_name == tab.number.to_string();
-                                if !new_name.is_empty() && !keep_auto_name {
+                                if new_name.is_empty() || new_name == tab.number.to_string() {
+                                    // Revert to auto-name
+                                    tab.custom_name = None;
+                                } else {
                                     tab.set_custom_name(new_name);
-                                    let tab_id = format!("{}:{}", workspace_id, active_tab + 1);
-                                    crate::logging::tab_renamed(&workspace_id, &tab_id);
-                                    state.mark_session_dirty();
                                 }
+                                let tab_id = format!("{}:{}", workspace_id, active_tab + 1);
+                                crate::logging::tab_renamed(&workspace_id, &tab_id);
+                                state.mark_session_dirty();
                             }
                         }
                     }

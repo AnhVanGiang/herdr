@@ -31,6 +31,9 @@ enum SplitCommand<'a> {
 
 pub struct Tab {
     pub custom_name: Option<String>,
+    /// Branch-derived name set automatically by periodic git check.
+    /// Never set by the user; always updated by auto_rename_tabs_from_branch.
+    pub auto_name: Option<String>,
     pub number: usize,
     /// Identity source for this tab's pane tree.
     pub root_pane: PaneId,
@@ -156,6 +159,7 @@ impl Tab {
         Ok((
             Self {
                 custom_name: None,
+                auto_name: None,
                 number,
                 root_pane: root_id,
                 layout,
@@ -175,6 +179,7 @@ impl Tab {
     pub fn display_name(&self) -> String {
         self.custom_name
             .clone()
+            .or_else(|| self.auto_name.clone())
             .unwrap_or_else(|| self.number.to_string())
     }
 

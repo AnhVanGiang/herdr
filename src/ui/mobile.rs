@@ -514,11 +514,7 @@ fn render_mobile_switcher_content(
         for (idx, tab) in ws.tabs.iter().enumerate() {
             let active = idx == ws.active_tab;
             let bg = mobile_item_bg(false, active, p);
-            let label = if tab.is_auto_named() {
-                format!("tab {}", idx + 1)
-            } else {
-                format!("{} · {}", idx + 1, tab.display_name())
-            };
+            let label = format!("{} · {}", idx + 1, tab.display_name());
             let title = Line::from(vec![
                 Span::styled("  ", Style::default().bg(bg)),
                 Span::styled(
