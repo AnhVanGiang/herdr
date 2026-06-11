@@ -10,6 +10,7 @@ use super::{
 use crate::events::AppEvent;
 use crate::workspace::{GitStatusCacheEntry, Workspace, WorkspaceGitStatus};
 use std::collections::HashMap;
+use tracing::info;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct WorkspaceGitRefreshItem {
@@ -270,6 +271,7 @@ impl App {
             .next_tab_auto_rename
             .is_some_and(|deadline| now >= deadline)
         {
+            info!("tab auto-rename deadline fired");
             self.auto_rename_tabs_from_branch();
             self.next_tab_auto_rename = Some(now + TAB_AUTO_RENAME_INTERVAL);
             changed = true;
@@ -449,6 +451,7 @@ impl App {
 
     pub(crate) fn auto_rename_tabs_from_branch(&mut self) {
         if !self.state.auto_rename_tab_from_branch {
+            info!("auto_rename_tab_from_branch is disabled");
             return;
         }
         for ws in &mut self.state.workspaces {
@@ -459,8 +462,19 @@ impl App {
                 {
                     let new_auto_name = crate::workspace::git_branch(&cwd);
                     if tab.auto_name != new_auto_name {
+                        info!(
+                            tab_number = tab.number,
+                            old = ?tab.auto_name,
+                            new = ?new_auto_name,
+                            "auto-rename tab"
+                        );
                         tab.auto_name = new_auto_name;
                     }
+                } else {
+                    info!(
+                        tab_number = tab.number,
+                        "no cwd for tab, skipping auto-rename"
+                    );
                 }
             }
         }
