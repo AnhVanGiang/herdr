@@ -1,0 +1,82 @@
+<h2>Quick picker UI direction</h2>
+<p class="subtitle">Centered modal for fast space / agent jumps. Which result layout feels better for v1?</p>
+
+<div class="cards">
+  <div class="card" data-choice="flat" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">Option A · Flat ranked list</div>
+        <div class="mockup-body" style="padding:12px; text-align:left;">
+          <div class="mock-input">&gt; risk</div>
+          <div style="margin-top:10px; display:grid; gap:8px;">
+            <div style="display:flex; gap:8px; align-items:center; border:1px solid #555; border-radius:8px; padding:8px; background:#1e1e1e;">
+              <span style="font-size:12px; border:1px solid #7aa2f7; color:#7aa2f7; border-radius:999px; padding:2px 6px;">Space</span>
+              <span>sa-credit-risk</span>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; border:1px solid #777; border-radius:8px; padding:8px; background:#2a2a2a;">
+              <span style="font-size:12px; border:1px solid #9ece6a; color:#9ece6a; border-radius:999px; padding:2px 6px;">Agent</span>
+              <span>train</span>
+              <span style="opacity:.7;">in sa-credit-risk</span>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; border:1px solid #555; border-radius:8px; padding:8px; background:#1e1e1e;">
+              <span style="font-size:12px; border:1px solid #9ece6a; color:#9ece6a; border-radius:999px; padding:2px 6px;">Agent</span>
+              <span>score-api</span>
+              <span style="opacity:.7;">in sa-credit-risk</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · Flat ranked list</h3>
+      <p>One mixed result list. Faster scan, less chrome, simpler implementation.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="grouped" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">Option B · Grouped sections</div>
+        <div class="mockup-body" style="padding:12px; text-align:left;">
+          <div class="mock-input">&gt; risk</div>
+          <div style="margin-top:10px; display:grid; gap:10px;">
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; opacity:.65; margin-bottom:6px;">Spaces</div>
+              <div style="border:1px solid #555; border-radius:8px; padding:8px; background:#1e1e1e;">sa-credit-risk</div>
+            </div>
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; opacity:.65; margin-bottom:6px;">Agents</div>
+              <div style="display:grid; gap:8px;">
+                <div style="border:1px solid #777; border-radius:8px; padding:8px; background:#2a2a2a;">train <span style="opacity:.7;">in sa-credit-risk</span></div>
+                <div style="border:1px solid #555; border-radius:8px; padding:8px; background:#1e1e1e;">score-api <span style="opacity:.7;">in sa-credit-risk</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · Grouped sections</h3>
+      <p>More structure, but more visual noise and slightly slower to navigate.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Recommended for v1</h4>
+      <ul>
+        <li>Option A keeps the picker small and fast.</li>
+        <li>Badges still distinguish spaces from agents.</li>
+        <li>Lower implementation cost in current herdr UI.</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Tradeoff</h4>
+      <ul>
+        <li>Option A relies on ranking rather than strict grouping.</li>
+      </ul>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,6 @@
+{"type":"server-started","port":50055,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:50055","screen_dir":"/Users/vanta/tamara/herdr/.superpowers/brainstorm/24704-1781089352/content","state_dir":"/Users/vanta/tamara/herdr/.superpowers/brainstorm/24704-1781089352/state"}
+{"type":"screen-added","file":"/Users/vanta/tamara/herdr/.superpowers/brainstorm/24704-1781089352/content/picker-layout-options.html"}
+{"source":"user-event","type":"click","text":"Option A · Flat ranked list\n        \n          > risk\n          \n            \n              Space\n              sa-credit-risk\n            \n            \n              Agent\n              train\n              in sa-credit-risk\n            \n            \n              Agent\n              score-api\n              in sa-credit-risk\n            \n          \n        \n      \n    \n    \n      A · Flat ranked list\n      One mixed result list. Faster scan, less chrome, simpler implementation.","choice":"flat","id":null,"timestamp":1781089439495}
+{"type":"screen-added","file":"/Users/vanta/tamara/herdr/.superpowers/brainstorm/24704-1781089352/content/picker-detail-options.html"}
+{"type":"screen-added","file":"/Users/vanta/tamara/herdr/.superpowers/brainstorm/24704-1781089352/content/waiting-terminal.html"}
+{"type":"server-stopped","reason":"idle timeout"}

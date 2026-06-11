@@ -1340,6 +1340,7 @@ pub struct AppState {
     pub mouse_scroll_lines: usize,
     pub confirm_close: bool,
     pub prompt_new_tab_name: bool,
+    pub auto_rename_tab_from_branch: bool,
     pub show_agent_labels_on_pane_borders: bool,
     pub pane_history_persistence: bool,
     /// Expose the focused pane's cursor anchor to the outer terminal even when
@@ -1678,6 +1679,7 @@ impl AppState {
             mouse_scroll_lines: crate::config::DEFAULT_MOUSE_SCROLL_LINES,
             confirm_close: true,
             prompt_new_tab_name: true,
+            auto_rename_tab_from_branch: true,
             show_agent_labels_on_pane_borders: false,
             pane_history_persistence: false,
             reveal_hidden_cursor_for_cjk_ime: false,

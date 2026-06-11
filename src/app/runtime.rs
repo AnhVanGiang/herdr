@@ -38,6 +38,9 @@ pub(crate) struct WorkspaceGitRefreshOutput {
     pub(crate) cache_updates: Vec<(std::path::PathBuf, GitStatusCacheEntry)>,
 }
 
+/// Interval between periodic auto-rename passes over auto-named tabs.
+const TAB_AUTO_RENAME_INTERVAL: Duration = Duration::from_secs(10);
+
 impl App {
     pub(crate) fn shutdown_detached_terminal_runtimes(&mut self) {
         let terminal_ids = std::mem::take(&mut self.state.terminal_runtime_shutdowns);
@@ -264,6 +267,15 @@ impl App {
         }
 
         if self
+            .next_tab_auto_rename
+            .is_some_and(|deadline| now >= deadline)
+        {
+            self.auto_rename_tabs_from_branch();
+            self.next_tab_auto_rename = Some(now + TAB_AUTO_RENAME_INTERVAL);
+            changed = true;
+        }
+
+        if self
             .session_save_deadline
             .is_some_and(|deadline| now >= deadline)
         {
@@ -435,6 +447,27 @@ impl App {
         }
     }
 
+    pub(crate) fn auto_rename_tabs_from_branch(&mut self) {
+        if !self.state.auto_rename_tab_from_branch {
+            return;
+        }
+        for ws in &mut self.state.workspaces {
+            for tab in &mut ws.tabs {
+                if !tab.is_auto_named() {
+                    continue;
+                }
+                let root_pane = tab.root_pane;
+                if let Some(cwd) =
+                    tab.cwd_for_pane(root_pane, &self.state.terminals, &self.terminal_runtimes)
+                {
+                    if let Some(branch) = crate::workspace::git_branch(&cwd) {
+                        tab.set_custom_name(branch);
+                    }
+                }
+            }
+        }
+    }
+
     pub(crate) fn run_auto_update_check(&mut self) {
         if !auto_updates_enabled(self.no_session) {
             self.next_auto_update_check = None;
@@ -551,6 +584,9 @@ impl App {
                 .flatten(),
             self.next_auto_update_check,
             self.next_agent_manifest_update_check,
+            (!self.no_session)
+                .then_some(self.next_tab_auto_rename)
+                .flatten(),
             self.agent_metadata_deadline,
             self.pending_agent_resume_deadline,
             self.session_save_deadline,

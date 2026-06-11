@@ -1,0 +1,67 @@
+<h2>Quick picker row content</h2>
+<p class="subtitle">For the flat list, which row detail level should v1 show?</p>
+
+<div class="cards">
+  <div class="card" data-choice="minimal" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">Option A · Minimal</div>
+        <div class="mockup-body" style="padding:12px; text-align:left; display:grid; gap:8px;">
+          <div style="display:flex; gap:8px; align-items:center; border:1px solid #777; border-radius:8px; padding:8px; background:#2a2a2a;">
+            <span style="font-size:12px; border:1px solid #9ece6a; color:#9ece6a; border-radius:999px; padding:2px 6px;">Agent</span>
+            <span>train</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; border:1px solid #555; border-radius:8px; padding:8px; background:#1e1e1e;">
+            <span style="font-size:12px; border:1px solid #7aa2f7; color:#7aa2f7; border-radius:999px; padding:2px 6px;">Space</span>
+            <span>sa-credit-risk</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · Minimal</h3>
+      <p>Short rows. Fast scan, but agent names may be ambiguous across spaces.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="context" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">Option B · Contextual</div>
+        <div class="mockup-body" style="padding:12px; text-align:left; display:grid; gap:8px;">
+          <div style="display:flex; gap:8px; align-items:center; border:1px solid #777; border-radius:8px; padding:8px; background:#2a2a2a;">
+            <span style="font-size:12px; border:1px solid #9ece6a; color:#9ece6a; border-radius:999px; padding:2px 6px;">Agent</span>
+            <span>train</span>
+            <span style="opacity:.7;">in sa-credit-risk</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; border:1px solid #555; border-radius:8px; padding:8px; background:#1e1e1e;">
+            <span style="font-size:12px; border:1px solid #7aa2f7; color:#7aa2f7; border-radius:999px; padding:2px 6px;">Space</span>
+            <span>sa-credit-risk</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · Contextual</h3>
+      <p>Agent rows include their parent space. Slightly wider, much clearer.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Recommended for v1</h4>
+      <ul>
+        <li>Option B avoids ambiguous agent names.</li>
+        <li>Still fits a compact picker.</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Tradeoff</h4>
+      <ul>
+        <li>Rows are a bit wider and denser.</li>
+      </ul>
+    </div>
+  </div>
+</div>

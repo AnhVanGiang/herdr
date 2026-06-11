@@ -521,6 +521,7 @@ impl HeadlessServer {
             if self.app.state.request_new_tab {
                 self.app.state.request_new_tab = false;
                 self.app.create_tab();
+                self.app.auto_rename_tabs_from_branch();
                 needs_render = true;
                 needs_full_render = true;
                 crate::render_prof::event("full_render_cause.deferred_new_tab");
@@ -3365,6 +3366,17 @@ impl HeadlessServer {
             .is_some_and(|deadline| now >= deadline)
         {
             self.app.run_agent_manifest_update_check();
+        }
+
+        if self
+            .app
+            .next_tab_auto_rename
+            .is_some_and(|deadline| now >= deadline)
+        {
+            self.app.auto_rename_tabs_from_branch();
+            self.app.next_tab_auto_rename =
+                Some(now + Duration::from_secs(10));
+            changed = true;
         }
 
         if self

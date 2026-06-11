@@ -438,6 +438,8 @@ pub struct UiConfig {
     pub confirm_close: bool,
     /// Ask for a tab name before creating a new tab. Default: true.
     pub prompt_new_tab_name: bool,
+    /// Automatically rename auto-named tabs from the current git branch. Default: true.
+    pub auto_rename_tab_from_branch: bool,
     /// Show agent labels in split pane borders when no manual pane label is set. Default: false.
     pub show_agent_labels_on_pane_borders: bool,
     /// Agent sidebar scope. Saved values are "current" or "all". Default: "all".
@@ -624,6 +626,7 @@ impl Default for UiConfig {
             mouse_scroll_lines: None,
             confirm_close: true,
             prompt_new_tab_name: true,
+            auto_rename_tab_from_branch: true,
             show_agent_labels_on_pane_borders: false,
             agent_panel_scope: AgentPanelScopeConfig::All,
             accent: "cyan".into(),
