@@ -192,6 +192,60 @@ impl App {
             return true;
         }
 
+        if self.state.mode == Mode::QuickPicker {
+            match mouse.kind {
+                MouseEventKind::Moved => {
+                    if let Some(idx) = self.state.quick_picker_row_index_at_from(
+                        &self.terminal_runtimes,
+                        mouse.column,
+                        mouse.row,
+                    ) {
+                        self.state.quick_picker.selected = idx;
+                        self.state
+                            .ensure_quick_picker_selection_visible_from(&self.terminal_runtimes);
+                    }
+                }
+                MouseEventKind::Down(MouseButton::Left) => {
+                    if let Some(idx) = self.state.quick_picker_row_index_at_from(
+                        &self.terminal_runtimes,
+                        mouse.column,
+                        mouse.row,
+                    ) {
+                        self.state.quick_picker.selected = idx;
+                        self.state
+                            .accept_quick_picker_selection_from(&self.terminal_runtimes);
+                    } else if !self
+                        .state
+                        .quick_picker_popup_contains(mouse.column, mouse.row)
+                    {
+                        leave_modal(&mut self.state);
+                    }
+                }
+                MouseEventKind::ScrollUp => {
+                    self.state.quick_picker.scroll =
+                        self.state.quick_picker.scroll.saturating_sub(3);
+                    self.state.quick_picker.selected = self.state.quick_picker.scroll;
+                    self.state
+                        .clamp_quick_picker_selection_from(&self.terminal_runtimes);
+                }
+                MouseEventKind::ScrollDown => {
+                    let viewport = self.state.quick_picker_body_rect().height as usize;
+                    let max = self
+                        .state
+                        .filtered_quick_picker_entries_from(&self.terminal_runtimes)
+                        .len()
+                        .saturating_sub(viewport.max(1));
+                    self.state.quick_picker.scroll =
+                        self.state.quick_picker.scroll.saturating_add(3).min(max);
+                    self.state.quick_picker.selected = self.state.quick_picker.scroll;
+                    self.state
+                        .clamp_quick_picker_selection_from(&self.terminal_runtimes);
+                }
+                _ => {}
+            }
+            return true;
+        }
+
         if self.state.mode == Mode::KeybindHelp {
             match mouse.kind {
                 MouseEventKind::Down(MouseButton::Left)
@@ -321,6 +375,83 @@ impl AppState {
 
     pub(crate) fn navigator_popup_contains(&self, col: u16, row: u16) -> bool {
         rect_contains(self.navigator_popup_rect(), col, row)
+    }
+
+    pub(crate) fn quick_picker_popup_rect(&self) -> Rect {
+        let area = self.onboarding_full_area();
+        let popup_w = 72.min(area.width.saturating_sub(4));
+        let popup_h = 14.min(area.height.saturating_sub(2));
+        let popup_x = area.x + (area.width.saturating_sub(popup_w)) / 2;
+        let popup_y = area.y + (area.height.saturating_sub(popup_h)) / 2;
+        Rect::new(popup_x, popup_y, popup_w.max(4), popup_h.max(4))
+    }
+
+    pub(crate) fn quick_picker_inner_rect(&self) -> Rect {
+        Block::default()
+            .borders(Borders::ALL)
+            .inner(self.quick_picker_popup_rect())
+    }
+
+    pub(crate) fn quick_picker_header_rect(&self) -> Rect {
+        let inner = self.quick_picker_inner_rect();
+        Rect::new(inner.x, inner.y, inner.width, inner.height.min(1))
+    }
+
+    pub(crate) fn quick_picker_search_rect(&self) -> Rect {
+        let inner = self.quick_picker_inner_rect();
+        Rect::new(
+            inner.x,
+            inner.y.saturating_add(1),
+            inner.width,
+            inner.height.saturating_sub(1).min(1),
+        )
+    }
+
+    pub(crate) fn quick_picker_body_rect(&self) -> Rect {
+        let inner = self.quick_picker_inner_rect();
+        if inner.height <= 4 {
+            return Rect::default();
+        }
+        Rect::new(
+            inner.x,
+            inner.y + 3,
+            inner.width,
+            inner.height.saturating_sub(4),
+        )
+    }
+
+    pub(crate) fn quick_picker_footer_rect(&self) -> Rect {
+        let inner = self.quick_picker_inner_rect();
+        Rect::new(
+            inner.x,
+            inner.y + inner.height.saturating_sub(1),
+            inner.width,
+            inner.height.min(1),
+        )
+    }
+
+    pub(crate) fn quick_picker_popup_contains(&self, col: u16, row: u16) -> bool {
+        rect_contains(self.quick_picker_popup_rect(), col, row)
+    }
+
+    pub(crate) fn quick_picker_row_index_at_from(
+        &self,
+        terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+        col: u16,
+        row: u16,
+    ) -> Option<usize> {
+        let body = self.quick_picker_body_rect();
+        if !rect_contains(body, col, row) {
+            return None;
+        }
+        let idx = self
+            .quick_picker
+            .scroll
+            .saturating_add(row.saturating_sub(body.y) as usize);
+        (idx < self
+            .filtered_quick_picker_entries_from(terminal_runtimes)
+            .len())
+        .then_some(idx)
     }
 
     pub(crate) fn navigator_search_contains(&self, col: u16, row: u16) -> bool {

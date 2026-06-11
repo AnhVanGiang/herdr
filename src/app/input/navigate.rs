@@ -522,6 +522,7 @@ pub(crate) enum NavigateAction {
     ReloadConfig,
     OpenNotificationTarget,
     Detach,
+    OpenQuickPicker,
     OpenNavigator,
 }
 
@@ -586,6 +587,7 @@ fn action_for_key(
         (&kb.help, NavigateAction::Help),
         (&kb.settings, NavigateAction::Settings),
         (&kb.workspace_picker, NavigateAction::WorkspacePicker),
+        (&kb.quick_picker, NavigateAction::OpenQuickPicker),
         (&kb.new_workspace, NavigateAction::NewWorkspace),
         (&kb.new_worktree, NavigateAction::NewWorktree),
         (&kb.open_worktree, NavigateAction::OpenWorktree),
@@ -857,6 +859,7 @@ pub(super) fn execute_navigate_action_in_context(
             super::modal::request_detach(state);
             leave_navigate_mode(state);
         }
+        NavigateAction::OpenQuickPicker => state.open_quick_picker_from(terminal_runtimes),
         NavigateAction::OpenNavigator => state.open_navigator_from(terminal_runtimes),
     }
 
@@ -1022,6 +1025,18 @@ mod tests {
         );
 
         assert_eq!(state.mode, Mode::Navigator);
+    }
+
+    #[test]
+    fn default_quick_picker_key_opens_quick_picker() {
+        let mut state = state_with_workspaces(&["test"]);
+
+        handle_navigate_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::empty()),
+        );
+
+        assert_eq!(state.mode, Mode::QuickPicker);
     }
 
     #[test]

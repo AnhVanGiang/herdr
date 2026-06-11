@@ -12,6 +12,7 @@ mod mobile;
 mod navigator;
 mod onboarding;
 mod panes;
+mod quick_picker;
 mod release_notes;
 mod scrollbar;
 mod settings;
@@ -38,6 +39,7 @@ use self::navigator::render_navigator_overlay;
 pub(crate) use self::onboarding::onboarding_welcome_continue_rect;
 use self::onboarding::render_onboarding_overlay;
 use self::panes::{compute_pane_infos, render_panes, resize_tab_panes};
+use self::quick_picker::render_quick_picker_overlay;
 pub(crate) use self::release_notes::{
     product_announcement_display_lines, release_notes_close_button_rect,
     release_notes_display_lines, release_notes_wrapped_line_count, PRODUCT_ANNOUNCEMENT_MODAL_SIZE,
@@ -412,6 +414,7 @@ pub fn render_with_runtime_registry(
         Mode::GlobalMenu => render_global_launcher_menu(app, frame),
         Mode::KeybindHelp => render_keybind_help_overlay(app, frame),
         Mode::Navigator => render_navigator_overlay(app, terminal_runtimes, frame),
+        Mode::QuickPicker => render_quick_picker_overlay(app, terminal_runtimes, frame),
         Mode::Terminal => {}
     }
 }
@@ -1170,6 +1173,9 @@ mod tests {
 
         assert!(workspace_tab
             .iter()
+            .any(|(key, label)| key == "prefix+space" && label.as_ref() == "quick picker"));
+        assert!(workspace_tab
+            .iter()
             .any(|(key, label)| key == "unset" && label.as_ref() == "previous workspace"));
         assert!(workspace_tab
             .iter()
@@ -1242,5 +1248,21 @@ mod tests {
             .join("");
         assert!(rendered_help.contains("open lazygit"));
         assert!(rendered_help.contains("custom command"));
+    }
+
+    #[test]
+    fn render_quick_picker_overlay_smoke_test() {
+        let mut app = crate::app::state::AppState::test_new();
+        app.workspaces = vec![crate::workspace::Workspace::test_new("one")];
+        app.ensure_test_terminals();
+        app.active = Some(0);
+        app.selected = 0;
+        app.open_quick_picker();
+
+        compute_view(&mut app, Rect::new(0, 0, 80, 20));
+
+        let backend = ratatui::backend::TestBackend::new(80, 20);
+        let mut terminal = ratatui::Terminal::new(backend).unwrap();
+        terminal.draw(|frame| render(&app, frame)).unwrap();
     }
 }

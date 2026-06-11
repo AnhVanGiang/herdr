@@ -48,6 +48,7 @@ mod modal;
 mod mouse;
 mod navigate;
 mod overlays;
+mod quick_picker;
 mod selection;
 mod settings;
 mod sidebar;
@@ -60,6 +61,7 @@ pub(crate) use self::{
         insert_navigator_search_text, insert_rename_input_text,
     },
     navigate::terminal_direct_navigation_action,
+    quick_picker::handle_quick_picker_key,
     settings::open_settings_at,
 };
 use self::{
@@ -115,6 +117,9 @@ impl App {
                 Mode::KeybindHelp => handle_keybind_help_key(&mut self.state, key_event),
                 Mode::Navigator => {
                     handle_navigator_key(&mut self.state, &self.terminal_runtimes, key_event)
+                }
+                Mode::QuickPicker => {
+                    handle_quick_picker_key(&mut self.state, &self.terminal_runtimes, key_event)
                 }
                 Mode::Terminal => unreachable!(),
             },

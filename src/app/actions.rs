@@ -13,8 +13,9 @@ use unicode_width::UnicodeWidthChar;
 
 use super::state::{
     text_matches_query, AgentNotificationDelivery, AppState, Mode, NavigatorRow,
-    NavigatorStateFilter, NavigatorTarget, PaneFocusTarget, PendingAgentNotification, ToastKind,
-    ToastNotification, ToastTarget, ViewLayout,
+    NavigatorStateFilter, NavigatorTarget, PaneFocusTarget, PendingAgentNotification,
+    QuickPickerEntry, QuickPickerTarget, ToastKind, ToastNotification, ToastTarget,
+    ViewLayout,
 };
 
 fn is_background_completion_transition(prev_state: AgentState, new_state: AgentState) -> bool {
@@ -339,6 +340,212 @@ impl AppState {
             .current_navigator_row_index_from(terminal_runtimes)
             .unwrap_or(0);
         self.ensure_navigator_selection_visible_from(terminal_runtimes);
+    }
+
+    pub(crate) fn open_quick_picker_from(
+        &mut self,
+        terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+    ) {
+        self.quick_picker.query.clear();
+        self.quick_picker.scroll = 0;
+        self.mode = Mode::QuickPicker;
+        self.quick_picker.selected = self
+            .current_quick_picker_entry_index_from(terminal_runtimes)
+            .unwrap_or(0);
+        self.ensure_quick_picker_selection_visible_from(terminal_runtimes);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn open_quick_picker(&mut self) {
+        let terminal_runtimes = crate::terminal::TerminalRuntimeRegistry::new();
+        self.open_quick_picker_from(&terminal_runtimes);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn quick_picker_entries(&self) -> Vec<QuickPickerEntry> {
+        let terminal_runtimes = crate::terminal::TerminalRuntimeRegistry::new();
+        self.quick_picker_entries_from(&terminal_runtimes)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn filtered_quick_picker_entries(&self) -> Vec<QuickPickerEntry> {
+        let terminal_runtimes = crate::terminal::TerminalRuntimeRegistry::new();
+        self.filtered_quick_picker_entries_from(&terminal_runtimes)
+    }
+
+    pub(crate) fn quick_picker_entries_from(
+        &self,
+        terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+    ) -> Vec<QuickPickerEntry> {
+        let mut entries = Vec::new();
+
+        for (ws_idx, ws) in self.workspaces.iter().enumerate() {
+            let workspace_label = ws.display_name_from(&self.terminals, terminal_runtimes);
+            entries.push(QuickPickerEntry {
+                target: QuickPickerTarget::Workspace { ws_idx },
+                label: workspace_label.clone(),
+                meta: "space".into(),
+                search_text: workspace_label.to_lowercase(),
+                is_current: self.active == Some(ws_idx),
+                is_workspace: true,
+            });
+
+            let multi_tab = ws.tabs.len() > 1;
+            for detail in ws.pane_details(&self.terminals) {
+                let meta = if multi_tab {
+                    format!("{} · {}", workspace_label, detail.tab_label)
+                } else {
+                    workspace_label.clone()
+                };
+                let label = detail.agent_label.clone();
+                let search_text =
+                    format!("{} {} {}", label, workspace_label, detail.tab_label).to_lowercase();
+                entries.push(QuickPickerEntry {
+                    target: QuickPickerTarget::Pane {
+                        ws_idx,
+                        tab_idx: detail.tab_idx,
+                        pane_id: detail.pane_id,
+                    },
+                    label,
+                    meta,
+                    search_text,
+                    is_current: self.is_active_pane(ws_idx, detail.tab_idx, detail.pane_id),
+                    is_workspace: false,
+                });
+            }
+        }
+
+        entries
+    }
+
+    pub(crate) fn filtered_quick_picker_entries_from(
+        &self,
+        terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+    ) -> Vec<QuickPickerEntry> {
+        let query = self.quick_picker.query.trim().to_lowercase();
+        let mut entries = self
+            .quick_picker_entries_from(terminal_runtimes)
+            .into_iter()
+            .filter(|entry| query.is_empty() || text_matches_query(&query, &entry.search_text))
+            .collect::<Vec<_>>();
+
+        entries.sort_by_key(|entry| {
+            let current_ws_bias = match entry.target {
+                QuickPickerTarget::Workspace { ws_idx }
+                | QuickPickerTarget::Pane { ws_idx, .. } => {
+                    usize::from(self.active != Some(ws_idx))
+                }
+            };
+            let current_target_bias = usize::from(!entry.is_current);
+            let kind_bias = usize::from(!entry.is_workspace);
+            (
+                current_ws_bias,
+                current_target_bias,
+                kind_bias,
+                entry.label.to_lowercase(),
+            )
+        });
+
+        entries
+    }
+
+    fn current_quick_picker_entry_index_from(
+        &self,
+        terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+    ) -> Option<usize> {
+        let entries = self.filtered_quick_picker_entries_from(terminal_runtimes);
+        entries
+            .iter()
+            .position(|entry| {
+                matches!(entry.target, QuickPickerTarget::Pane { .. }) && entry.is_current
+            })
+            .or_else(|| entries.iter().position(|entry| entry.is_current))
+    }
+
+    pub(crate) fn move_quick_picker_selection_from(
+        &mut self,
+        terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+        delta: isize,
+    ) {
+        let count = self
+            .filtered_quick_picker_entries_from(terminal_runtimes)
+            .len();
+        if count == 0 {
+            self.quick_picker.selected = 0;
+            self.quick_picker.scroll = 0;
+            return;
+        }
+        let current = self.quick_picker.selected.min(count - 1) as isize;
+        self.quick_picker.selected = (current + delta).clamp(0, count as isize - 1) as usize;
+        self.ensure_quick_picker_selection_visible_from(terminal_runtimes);
+    }
+
+    pub(crate) fn clamp_quick_picker_selection_from(
+        &mut self,
+        terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+    ) {
+        let count = self
+            .filtered_quick_picker_entries_from(terminal_runtimes)
+            .len();
+        self.quick_picker.selected = self.quick_picker.selected.min(count.saturating_sub(1));
+        self.ensure_quick_picker_selection_visible_from(terminal_runtimes);
+    }
+
+    pub(crate) fn ensure_quick_picker_selection_visible_from(
+        &mut self,
+        terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+    ) {
+        let count = self
+            .filtered_quick_picker_entries_from(terminal_runtimes)
+            .len();
+        if count == 0 {
+            self.quick_picker.scroll = 0;
+            return;
+        }
+
+        let viewport = 8usize;
+        let max_scroll = count.saturating_sub(viewport);
+        if self.quick_picker.selected < self.quick_picker.scroll {
+            self.quick_picker.scroll = self.quick_picker.selected;
+        } else if self.quick_picker.selected >= self.quick_picker.scroll.saturating_add(viewport) {
+            self.quick_picker.scroll = self
+                .quick_picker
+                .selected
+                .saturating_add(1)
+                .saturating_sub(viewport);
+        }
+        self.quick_picker.scroll = self.quick_picker.scroll.min(max_scroll);
+    }
+
+    pub(crate) fn accept_quick_picker_selection_from(
+        &mut self,
+        terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+    ) -> bool {
+        let entries = self.filtered_quick_picker_entries_from(terminal_runtimes);
+        if entries.is_empty() {
+            return false;
+        }
+        let selected = self
+            .quick_picker
+            .selected
+            .min(entries.len().saturating_sub(1));
+        self.quick_picker.selected = selected;
+        let entry = entries[selected].clone();
+
+        match entry.target {
+            QuickPickerTarget::Workspace { ws_idx } => {
+                self.focus_navigator_target(NavigatorTarget::Workspace { ws_idx })
+            }
+            QuickPickerTarget::Pane {
+                ws_idx,
+                tab_idx,
+                pane_id,
+            } => self.focus_navigator_target(NavigatorTarget::Pane {
+                ws_idx,
+                tab_idx,
+                pane_id,
+            }),
+        }
     }
 
     #[cfg(test)]
@@ -3207,6 +3414,55 @@ mod tests {
             row.target,
             crate::app::state::NavigatorTarget::Pane { pane_id, .. } if pane_id == agent
         ) && row.meta.contains("claude")));
+    }
+
+    #[test]
+    fn quick_picker_entries_include_spaces_and_agent_panes() {
+        let mut state = app_with_workspaces(&["one"]);
+        let agent = state.workspaces[0].test_split(Direction::Horizontal);
+        state.ensure_test_terminals();
+
+        let terminal_id = state.workspaces[0].terminal_id(agent).cloned().unwrap();
+        state
+            .terminals
+            .get_mut(&terminal_id)
+            .unwrap()
+            .set_agent_name("planner".into());
+
+        let entries = state.quick_picker_entries();
+
+        assert!(entries.iter().any(|entry| matches!(
+            entry.target,
+            crate::app::state::QuickPickerTarget::Workspace { .. }
+        )));
+        assert!(entries.iter().any(|entry| matches!(
+            entry.target,
+            crate::app::state::QuickPickerTarget::Pane { pane_id, .. } if pane_id == agent
+        ) && entry.label == "planner"));
+    }
+
+    #[test]
+    fn quick_picker_search_matches_agent_and_workspace_context() {
+        let mut state = app_with_workspaces(&["credit-risk"]);
+        let agent = state.workspaces[0].test_split(Direction::Horizontal);
+        state.ensure_test_terminals();
+
+        let terminal_id = state.workspaces[0].terminal_id(agent).cloned().unwrap();
+        state
+            .terminals
+            .get_mut(&terminal_id)
+            .unwrap()
+            .set_agent_name("train".into());
+
+        state.open_quick_picker();
+        state.quick_picker.query = "credit train".into();
+
+        let entries = state.filtered_quick_picker_entries();
+
+        assert!(entries.iter().any(|entry| matches!(
+            entry.target,
+            crate::app::state::QuickPickerTarget::Pane { pane_id, .. } if pane_id == agent
+        )));
     }
 
     #[test]

@@ -757,6 +757,36 @@ pub enum Mode {
     GlobalMenu,
     KeybindHelp,
     Navigator,
+    QuickPicker,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum QuickPickerTarget {
+    Workspace {
+        ws_idx: usize,
+    },
+    Pane {
+        ws_idx: usize,
+        tab_idx: usize,
+        pane_id: PaneId,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct QuickPickerEntry {
+    pub target: QuickPickerTarget,
+    pub label: String,
+    pub meta: String,
+    pub search_text: String,
+    pub is_current: bool,
+    pub is_workspace: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub(crate) struct QuickPickerState {
+    pub query: String,
+    pub selected: usize,
+    pub scroll: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1291,6 +1321,7 @@ pub struct AppState {
     pub product_announcement: Option<ProductAnnouncementState>,
     pub keybind_help: KeybindHelpState,
     pub navigator: NavigatorState,
+    pub quick_picker: QuickPickerState,
     pub copy_mode: Option<CopyModeState>,
     pub workspace_scroll: usize,
     pub agent_panel_scroll: usize,
@@ -1623,6 +1654,7 @@ impl AppState {
             product_announcement: None,
             keybind_help: KeybindHelpState { scroll: 0 },
             navigator: NavigatorState::default(),
+            quick_picker: QuickPickerState::default(),
             copy_mode: None,
             workspace_scroll: 0,
             agent_panel_scroll: 0,

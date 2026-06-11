@@ -451,6 +451,7 @@ impl App {
             }),
             keybind_help: state::KeybindHelpState { scroll: 0 },
             navigator: state::NavigatorState::default(),
+            quick_picker: state::QuickPickerState::default(),
             copy_mode: None,
             workspace_scroll: 0,
             agent_panel_scroll: 0,
@@ -1495,6 +1496,9 @@ impl App {
             }
             Mode::Navigator => {
                 input::handle_navigator_key(&mut self.state, &self.terminal_runtimes, key_event);
+            }
+            Mode::QuickPicker => {
+                input::handle_quick_picker_key(&mut self.state, &self.terminal_runtimes, key_event);
             }
             Mode::Terminal => {
                 // Should not be called in terminal mode.

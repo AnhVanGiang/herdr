@@ -268,6 +268,7 @@ pub struct Keybinds {
     pub rename_workspace: ActionKeybinds,
     pub close_workspace: ActionKeybinds,
     pub workspace_picker: ActionKeybinds,
+    pub quick_picker: ActionKeybinds,
     pub goto: ActionKeybinds,
     pub detach: ActionKeybinds,
     pub reload_config: ActionKeybinds,
@@ -448,6 +449,7 @@ impl Config {
             rename_workspace: action!("keys.rename_workspace", &self.keys.rename_workspace),
             close_workspace: action!("keys.close_workspace", &self.keys.close_workspace),
             workspace_picker: action!("keys.workspace_picker", &self.keys.workspace_picker),
+            quick_picker: action!("keys.quick_picker", &self.keys.quick_picker),
             goto: action!("keys.goto", &self.keys.goto),
             detach: action!("keys.detach", &self.keys.detach),
             reload_config: action!("keys.reload_config", &self.keys.reload_config),
@@ -1308,6 +1310,18 @@ next_tab = "prefix+n"
             binding_triggers(&kb.goto),
             vec![BindingTrigger::Prefix((
                 KeyCode::Char('g'),
+                KeyModifiers::empty()
+            ))]
+        );
+    }
+
+    #[test]
+    fn quick_picker_defaults_to_prefix_space() {
+        let kb = Config::default().keybinds();
+        assert_eq!(
+            binding_triggers(&kb.quick_picker),
+            vec![BindingTrigger::Prefix((
+                KeyCode::Char(' '),
                 KeyModifiers::empty()
             ))]
         );
