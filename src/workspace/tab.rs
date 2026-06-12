@@ -31,6 +31,9 @@ enum SplitCommand<'a> {
 
 pub struct Tab {
     pub custom_name: Option<String>,
+    /// Whether the current custom tab name should be discarded on the next
+    /// observed branch-name change for this tab.
+    pub custom_name_is_temporary: bool,
     /// Branch-derived name set automatically by periodic git check.
     /// Never set by the user; always updated by auto_rename_tabs_from_branch.
     pub auto_name: Option<String>,
@@ -159,6 +162,7 @@ impl Tab {
         Ok((
             Self {
                 custom_name: None,
+                custom_name_is_temporary: false,
                 auto_name: None,
                 number,
                 root_pane: root_id,
@@ -189,6 +193,12 @@ impl Tab {
 
     pub fn set_custom_name(&mut self, name: String) {
         self.custom_name = Some(name);
+        self.custom_name_is_temporary = true;
+    }
+
+    pub fn clear_custom_name(&mut self) {
+        self.custom_name = None;
+        self.custom_name_is_temporary = false;
     }
 
     pub fn split_focused(

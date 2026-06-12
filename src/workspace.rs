@@ -777,6 +777,7 @@ impl Workspace {
         panes.insert(root_id, PaneState::new(terminal_id));
         let tab = Tab {
             custom_name: None,
+            custom_name_is_temporary: false,
             auto_name: None,
             number: 1,
             root_pane: root_id,
@@ -828,6 +829,7 @@ impl Workspace {
         panes.insert(root_id, PaneState::new(TerminalId::alloc()));
         let tab = Tab {
             custom_name: name.map(str::to_string),
+            custom_name_is_temporary: name.is_some(),
             auto_name: None,
             number: self.tabs.len() + 1,
             root_pane: root_id,

@@ -80,6 +80,8 @@ pub struct TabSnapshot {
     #[serde(default)]
     pub custom_name: Option<String>,
     #[serde(default)]
+    pub custom_name_is_temporary: bool,
+    #[serde(default)]
     pub auto_name: Option<String>,
     pub layout: LayoutSnapshot,
     pub panes: HashMap<u32, PaneSnapshot>,
@@ -140,6 +142,7 @@ impl From<LegacyWorkspaceSnapshot> for WorkspaceSnapshot {
         let identity_cwd = legacy_identity_cwd(&snap);
         let tab = TabSnapshot {
             custom_name: None,
+            custom_name_is_temporary: false,
             auto_name: None,
             layout: snap.layout,
             panes: snap.panes,
@@ -361,6 +364,7 @@ fn capture_tab(
     }
     TabSnapshot {
         custom_name: tab.custom_name.clone(),
+        custom_name_is_temporary: tab.custom_name_is_temporary,
         auto_name: tab.auto_name.clone(),
         layout: capture_node(tab.layout.root()),
         panes,
@@ -622,6 +626,7 @@ mod tests {
                 worktree_space: None,
                 tabs: vec![TabSnapshot {
                     custom_name: Some("api".to_string()),
+                    custom_name_is_temporary: true,
                     auto_name: None,
                     layout: LayoutSnapshot::Split {
                         direction: DirectionSnapshot::Horizontal,
@@ -1160,6 +1165,7 @@ mod tests {
                 worktree_space: None,
                 tabs: vec![TabSnapshot {
                     custom_name: None,
+                    custom_name_is_temporary: false,
                     auto_name: None,
                     layout: LayoutSnapshot::Split {
                         direction: DirectionSnapshot::Horizontal,

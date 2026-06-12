@@ -3374,8 +3374,7 @@ impl HeadlessServer {
             .is_some_and(|deadline| now >= deadline)
         {
             self.app.auto_rename_tabs_from_branch();
-            self.app.next_tab_auto_rename =
-                Some(now + Duration::from_secs(10));
+            self.app.next_tab_auto_rename = Some(now + Duration::from_secs(10));
             changed = true;
         }
 

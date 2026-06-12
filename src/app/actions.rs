@@ -14,8 +14,7 @@ use unicode_width::UnicodeWidthChar;
 use super::state::{
     text_matches_query, AgentNotificationDelivery, AppState, Mode, NavigatorRow,
     NavigatorStateFilter, NavigatorTarget, PaneFocusTarget, PendingAgentNotification,
-    QuickPickerEntry, QuickPickerTarget, ToastKind, ToastNotification, ToastTarget,
-    ViewLayout,
+    QuickPickerEntry, QuickPickerTarget, ToastKind, ToastNotification, ToastTarget, ViewLayout,
 };
 
 fn is_background_completion_transition(prev_state: AgentState, new_state: AgentState) -> bool {

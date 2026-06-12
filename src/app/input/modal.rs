@@ -456,7 +456,7 @@ pub(super) fn apply_rename_action(state: &mut AppState, action: ModalAction) {
                             if let Some(tab) = ws.active_tab_mut() {
                                 if new_name.is_empty() || new_name == tab.number.to_string() {
                                     // Revert to auto-name
-                                    tab.custom_name = None;
+                                    tab.clear_custom_name();
                                 } else {
                                     tab.set_custom_name(new_name);
                                 }

@@ -461,7 +461,11 @@ impl App {
                     tab.cwd_for_pane(root_pane, &self.state.terminals, &self.terminal_runtimes)
                 {
                     let new_auto_name = crate::workspace::git_branch(&cwd);
-                    if tab.auto_name != new_auto_name {
+                    let branch_changed = tab.auto_name != new_auto_name;
+                    if tab.custom_name_is_temporary && branch_changed && new_auto_name.is_some() {
+                        tab.clear_custom_name();
+                    }
+                    if branch_changed {
                         info!(
                             tab_number = tab.number,
                             old = ?tab.auto_name,
@@ -717,6 +721,30 @@ mod tests {
     use crate::app::state;
     use crate::workspace::Workspace;
     use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_test_dir(prefix: &str) -> PathBuf {
+        let unique = format!(
+            "herdr-runtime-{prefix}-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("system time before unix epoch")
+                .as_nanos()
+        );
+        let path = std::env::temp_dir().join(unique);
+        std::fs::create_dir_all(&path).expect("create temp test dir");
+        path
+    }
+
+    fn write_git_head(repo: &std::path::Path, branch: &str) {
+        std::fs::create_dir_all(repo.join(".git")).expect("create .git dir");
+        std::fs::write(
+            repo.join(".git/HEAD"),
+            format!("ref: refs/heads/{branch}\n"),
+        )
+        .expect("write git head");
+    }
 
     fn test_app_with_pane() -> (super::super::App, crate::layout::PaneId) {
         let mut app = super::super::App::new(
@@ -809,6 +837,79 @@ mod tests {
         assert_eq!(items.len(), 1);
         assert_eq!(items[0].cache_key, cwd);
         let _ = std::fs::remove_dir_all(&cwd);
+    }
+
+    #[test]
+    fn temporary_custom_tab_name_persists_until_branch_changes() {
+        let repo = temp_test_dir("tab-auto-rename");
+        write_git_head(&repo, "main");
+
+        let (mut app, pane_id) = test_app_with_pane();
+        app.state.ensure_test_terminals();
+        let terminal_id = app.state.workspaces[0]
+            .terminal_id(pane_id)
+            .cloned()
+            .expect("test pane should have a terminal");
+        app.state
+            .terminals
+            .get_mut(&terminal_id)
+            .expect("test terminal should exist")
+            .cwd = repo.clone();
+
+        app.state.workspaces[0].tabs[0].auto_name = Some("main".into());
+        app.state.workspaces[0].tabs[0].set_custom_name("logs".into());
+
+        app.auto_rename_tabs_from_branch();
+        assert_eq!(
+            app.state.workspaces[0].tabs[0].custom_name.as_deref(),
+            Some("logs")
+        );
+        assert_eq!(app.state.workspaces[0].tabs[0].display_name(), "logs");
+
+        write_git_head(&repo, "feature");
+
+        app.auto_rename_tabs_from_branch();
+        assert!(app.state.workspaces[0].tabs[0].custom_name.is_none());
+        assert_eq!(
+            app.state.workspaces[0].tabs[0].auto_name.as_deref(),
+            Some("feature")
+        );
+        assert_eq!(app.state.workspaces[0].tabs[0].display_name(), "feature");
+
+        let _ = std::fs::remove_dir_all(repo);
+    }
+
+    #[test]
+    fn temporary_custom_tab_name_persists_when_branch_name_disappears() {
+        let repo = temp_test_dir("tab-auto-rename-detached");
+        write_git_head(&repo, "main");
+
+        let (mut app, pane_id) = test_app_with_pane();
+        app.state.ensure_test_terminals();
+        let terminal_id = app.state.workspaces[0]
+            .terminal_id(pane_id)
+            .cloned()
+            .expect("test pane should have a terminal");
+        app.state
+            .terminals
+            .get_mut(&terminal_id)
+            .expect("test terminal should exist")
+            .cwd = repo.clone();
+
+        app.state.workspaces[0].tabs[0].auto_name = Some("main".into());
+        app.state.workspaces[0].tabs[0].set_custom_name("logs".into());
+
+        std::fs::write(repo.join(".git/HEAD"), "deadbeef\n").expect("write detached head");
+
+        app.auto_rename_tabs_from_branch();
+        assert_eq!(
+            app.state.workspaces[0].tabs[0].custom_name.as_deref(),
+            Some("logs")
+        );
+        assert_eq!(app.state.workspaces[0].tabs[0].auto_name, None);
+        assert_eq!(app.state.workspaces[0].tabs[0].display_name(), "logs");
+
+        let _ = std::fs::remove_dir_all(repo);
     }
 
     #[test]
