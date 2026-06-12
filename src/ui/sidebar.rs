@@ -311,10 +311,8 @@ fn grouped_child_display_label(label: &str, branch: Option<&str>, has_custom_nam
     let Some(branch) = branch else {
         return label.to_string();
     };
-    branch
-        .strip_prefix("worktree/")
-        .unwrap_or(branch)
-        .to_string()
+    let short_branch = branch.strip_prefix("worktree/").unwrap_or(branch);
+    format!("{label}/{short_branch}")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -939,8 +937,12 @@ fn render_workspace_list(
             line1.push(Span::styled(" ", Style::default()));
         }
         if card.indented {
+            let repo_label = ws
+                .worktree_space()
+                .map(|space| space.label.as_str())
+                .unwrap_or(&label);
             let display_label = grouped_child_display_label(
-                &label,
+                repo_label,
                 ws.branch().as_deref(),
                 ws.custom_name.is_some(),
             );
@@ -1426,10 +1428,10 @@ mod tests {
     }
 
     #[test]
-    fn grouped_child_label_uses_short_branch_for_auto_named_workspace() {
+    fn grouped_child_label_uses_repo_prefixed_branch_for_auto_named_workspace() {
         assert_eq!(
-            grouped_child_display_label("herdr-issue", Some("worktree/issue-137"), false),
-            "issue-137"
+            grouped_child_display_label("herdr", Some("worktree/issue-137"), false),
+            "herdr/issue-137"
         );
     }
 

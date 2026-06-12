@@ -124,6 +124,36 @@ impl DerefMut for Workspace {
 }
 
 impl Workspace {
+    fn auto_display_name_for_cwd(&self, cwd: &std::path::Path) -> String {
+        if let Some(space) = crate::workspace::git_space_metadata(cwd)
+            .or_else(|| self.cached_git_space.clone())
+            .filter(|space| space.is_linked_worktree)
+        {
+            let suffix = self
+                .cached_git_branch
+                .as_deref()
+                .map(|branch| {
+                    branch
+                        .strip_prefix("worktree/")
+                        .unwrap_or(branch)
+                        .to_string()
+                })
+                .or_else(|| {
+                    space
+                        .repo_root
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .map(str::to_owned)
+                });
+            if let Some(suffix) = suffix {
+                return format!("{}/{suffix}", space.label);
+            }
+            return space.label.clone();
+        }
+
+        derive_label_from_cwd(cwd)
+    }
+
     pub fn new(
         initial_cwd: PathBuf,
         rows: u16,
@@ -637,7 +667,7 @@ impl Workspace {
         }
 
         self.resolved_identity_cwd()
-            .map(|cwd| derive_label_from_cwd(&cwd))
+            .map(|cwd| self.auto_display_name_for_cwd(&cwd))
             .unwrap_or_else(|| "workspace".into())
     }
 
@@ -651,7 +681,7 @@ impl Workspace {
         }
 
         self.resolved_identity_cwd_from(terminals, terminal_runtimes)
-            .map(|cwd| derive_label_from_cwd(&cwd))
+            .map(|cwd| self.auto_display_name_for_cwd(&cwd))
             .unwrap_or_else(|| "workspace".into())
     }
 
@@ -868,6 +898,41 @@ mod tests {
         assert_eq!(
             ws.resolved_identity_cwd_from(&terminals, &terminal_runtimes),
             Some(PathBuf::from("/herdr-test/pion"))
+        );
+    }
+
+    #[test]
+    fn linked_worktree_workspace_name_is_repo_prefixed_branch() {
+        let mut ws = Workspace::test_new("ignored");
+        ws.custom_name = None;
+        ws.cached_git_branch = Some("worktree/issue-137".into());
+        ws.cached_git_space = Some(GitSpaceMetadata {
+            key: "repo-key".into(),
+            checkout_key: "/repo/.worktrees/issue-137".into(),
+            label: "herdr".into(),
+            repo_root: PathBuf::from("/repo/.worktrees/issue-137"),
+            is_linked_worktree: true,
+        });
+        ws.worktree_space = Some(WorktreeSpaceMembership {
+            key: "repo-key".into(),
+            label: "herdr".into(),
+            repo_root: PathBuf::from("/repo/herdr"),
+            checkout_path: PathBuf::from("/repo/.worktrees/issue-137"),
+            is_linked_worktree: true,
+        });
+
+        let root_pane = ws.tabs[0].root_pane;
+        let terminal_id = ws.tabs[0].terminal_id(root_pane).unwrap().clone();
+        let mut terminals = HashMap::new();
+        terminals.insert(
+            terminal_id.clone(),
+            TerminalState::new(terminal_id, PathBuf::from("/repo/.worktrees/issue-137")),
+        );
+        let terminal_runtimes = TerminalRuntimeRegistry::new();
+
+        assert_eq!(
+            ws.display_name_from(&terminals, &terminal_runtimes),
+            "herdr/issue-137"
         );
     }
 
